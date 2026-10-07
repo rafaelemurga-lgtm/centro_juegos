@@ -65,6 +65,7 @@ class PantallaPrincipal extends StatelessWidget {
     {
       'nombre': 'Nintendo DS',
       'icono': Icons.sports_esports,
+      'sistema': sistemaNintendoDs,
     },
     {
       'nombre': 'Nintendo 3DS',

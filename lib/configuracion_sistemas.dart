@@ -66,3 +66,15 @@ const sistemaGba = Sistema(
     '.zip',
   ],
 );
+
+const sistemaNintendoDs = Sistema(
+  nombre: 'Nintendo DS',
+  plataforma: 'Nintendo DS',
+  ejecutable: r'C:\RetroArch-Win64\retroarch.exe',
+  core: r'C:\RetroArch-Win64\cores\melonds_libretro.dll',
+  carpetaRoms: r'\\RAFITASERVER\Tres\ROMs\Nintendo DS',
+  extensiones: [
+    '.zip',
+    '.7z',
+  ],
+);

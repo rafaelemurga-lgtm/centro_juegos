@@ -68,24 +68,28 @@ class PantallaPrincipal extends StatelessWidget {
       'sistema': sistemaNintendoDs,
     },
     {
-      'nombre': 'Nintendo 3DS',
-      'icono': Icons.sports_esports,
-    },
+      'nombre': 'Nintendo 3DS', 
+      'icono': Icons.sports_esports, 
+      'sistema': sistemaNintendo3Ds},
     {
       'nombre': 'GameCube',
       'icono': Icons.sports_esports,
+      'sistema': sistemaGameCube,
     },
     {
       'nombre': 'Nintendo Wii',
       'icono': Icons.sports_esports,
+      'sistema': sistemaNintendoWii,
     },
     {
       'nombre': 'MAME',
       'icono': Icons.sports_esports,
+      'sistema': sistemaMame,
     },
     {
       'nombre': 'Xbox',
       'icono': Icons.sports_esports,
+      'sistema': sistemaXbox,
     },
   ];
 

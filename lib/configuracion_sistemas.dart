@@ -78,3 +78,49 @@ const sistemaNintendoDs = Sistema(
     '.7z',
   ],
 );
+
+const sistemaNintendo3Ds = Sistema(
+  nombre: 'Nintendo 3DS',
+  plataforma: 'Nintendo 3DS',
+  ejecutable: r'C:\Program Files\Azahar\azahar.exe',
+  core: '',
+  carpetaRoms: r'\\RAFITASERVER\Tres\ROMs\Nintendo 3Ds',
+  extensiones: ['.3ds'],
+);
+
+const sistemaGameCube = Sistema(
+  nombre: 'GameCube',
+  plataforma: 'Nintendo GameCube',
+  ejecutable: r'C:\Users\Rafael Eduardo\Games\dolphin-2512-x64\Dolphin-x64\Dolphin.exe',
+  core: null,
+  carpetaRoms: r'\\RAFITASERVER\Tres\ROMs\Game Cube',
+  extensiones: ['.iso', '.rvz', '.gcz', '.wbfs'],
+);
+
+const sistemaNintendoWii = Sistema(
+  nombre: 'Nintendo Wii',
+  plataforma: 'Nintendo Wii',
+  ejecutable: r'C:\Users\Rafael Eduardo\Games\dolphin-2512-x64\Dolphin-x64\Dolphin.exe',
+  core: null,
+  carpetaRoms: r'\\RAFITASERVER\Tres\ROMs\Wii',
+  extensiones: ['.iso', '.rvz', '.wbfs', '.gcz'],
+);
+
+const sistemaMame = Sistema(
+  nombre: 'MAME',
+  plataforma: 'Arcade / FinalBurn Neo',
+  ejecutable: r'C:\RetroArch-Win64\retroarch.exe',
+  core: r'C:\RetroArch-Win64\cores\fbneo_libretro.dll',
+  carpetaRoms: r'\\RAFITASERVER\Tres\ROMs\MAME',
+  extensiones: ['.zip'],
+);
+
+const sistemaXbox = Sistema(
+  nombre: 'Xbox',
+  plataforma: 'Xbox',
+  ejecutable:
+      r'C:\Users\Rafael Eduardo\Games\xemu-0.8.133-windows-x86_64\xemu.exe',
+  core: null,
+  carpetaRoms: r'\\RAFITASERVER\Tres\ROMs\Xbox',
+  extensiones: ['.iso'],
+);

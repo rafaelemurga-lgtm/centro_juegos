@@ -89,14 +89,25 @@ class _PantallaSistemaState extends State<PantallaSistema> {
     try {
       final argumentos = <String>[];
 
-      if (sistema.core != null) {
+      // Xbox original mediante xemu.
+      if (sistema.nombre == 'Xbox') {
         argumentos.addAll([
-          '-L',
-          sistema.core!,
+          '-dvd_path',
+          rom.path,
         ]);
-      }
+      } else {
+        // RetroArch utiliza un core.
+        if (sistema.core != null) {
+          argumentos.addAll([
+            '-L',
+            sistema.core!,
+          ]);
+        }
 
-      argumentos.add(rom.path);
+        // Dolphin, Azahar y otros emuladores
+        // reciben directamente la ruta del juego.
+        argumentos.add(rom.path);
+      }
 
       await Process.start(
         sistema.ejecutable,

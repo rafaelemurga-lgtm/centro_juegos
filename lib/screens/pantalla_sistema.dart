@@ -1,8 +1,11 @@
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 
 import '../models/sistema.dart';
+import '../services/caratulas_service.dart';
+import '../services/favoritos_service.dart';
 
 class PantallaSistema extends StatefulWidget {
   final Sistema sistema;
@@ -18,7 +21,9 @@ class PantallaSistema extends StatefulWidget {
 
 class _PantallaSistemaState extends State<PantallaSistema> {
   List<FileSystemEntity> _roms = [];
+  Set<String> _favoritos = {};
   bool _cargando = true;
+  bool _cargandoFavoritos = true;
   String? _error;
 
   Sistema get sistema => widget.sistema;
@@ -27,31 +32,46 @@ class _PantallaSistemaState extends State<PantallaSistema> {
   void initState() {
     super.initState();
     _cargarRoms();
+    _cargarFavoritos();
+  }
+
+  Future<void> _cargarFavoritos() async {
+    try {
+      final favoritos = await FavoritosService.obtenerFavoritos();
+
+      if (!mounted) return;
+
+      setState(() {
+        _favoritos = favoritos
+            .map((juego) => juego['ruta'])
+            .whereType<String>()
+            .toSet();
+        _cargandoFavoritos = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _cargandoFavoritos = false);
+    }
   }
 
   Future<void> _cargarRoms() async {
     try {
       final directorio = Directory(sistema.carpetaRoms);
 
-      final roms = await directorio
-          .list()
-          .where((archivo) {
-            if (archivo is! File) {
-              return false;
-            }
+      final roms = await directorio.list().where((archivo) {
+        if (archivo is! File) return false;
 
-            final ruta = archivo.path.toLowerCase();
+        final ruta = archivo.path.toLowerCase();
 
-            return sistema.extensiones.any(
-              (extension) => ruta.endsWith(extension),
-            );
-          })
-          .toList();
+        return sistema.extensiones.any(
+          (extension) => ruta.endsWith(extension),
+        );
+      }).toList();
 
       roms.sort(
-        (a, b) => _nombreRom(a).toLowerCase().compareTo(
-              _nombreRom(b).toLowerCase(),
-            ),
+        (a, b) => _nombreRom(a)
+            .toLowerCase()
+            .compareTo(_nombreRom(b).toLowerCase()),
       );
 
       if (!mounted) return;
@@ -75,37 +95,61 @@ class _PantallaSistemaState extends State<PantallaSistema> {
 
     for (final extension in sistema.extensiones) {
       if (nombre.toLowerCase().endsWith(extension)) {
-        return nombre.substring(
-          0,
-          nombre.length - extension.length,
-        );
+        return nombre.substring(0, nombre.length - extension.length);
       }
     }
 
     return nombre;
   }
 
+  Future<void> _alternarFavorito(FileSystemEntity rom) async {
+    final ruta = rom.path;
+    final eraFavorito = _favoritos.contains(ruta);
+
+    setState(() {
+      if (eraFavorito) {
+        _favoritos.remove(ruta);
+      } else {
+        _favoritos.add(ruta);
+      }
+    });
+
+    try {
+      await FavoritosService.alternarFavorito(
+        sistema: sistema.nombre,
+        nombre: _nombreRom(rom),
+        ruta: ruta,
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        if (eraFavorito) {
+          _favoritos.add(ruta);
+        } else {
+          _favoritos.remove(ruta);
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo guardar el favorito:\n$e'),
+        ),
+      );
+    }
+  }
+
   Future<void> _lanzarRom(FileSystemEntity rom) async {
     try {
       final argumentos = <String>[];
 
-      // Xbox original mediante xemu.
       if (sistema.nombre == 'Xbox') {
-        argumentos.addAll([
-          '-dvd_path',
-          rom.path,
-        ]);
+        argumentos.addAll(['-dvd_path', rom.path]);
       } else {
-        // RetroArch utiliza un core.
         if (sistema.core != null) {
-          argumentos.addAll([
-            '-L',
-            sistema.core!,
-          ]);
+          argumentos.addAll(['-L', sistema.core!]);
         }
 
-        // Dolphin, Azahar y otros emuladores
-        // reciben directamente la ruta del juego.
         argumentos.add(rom.path);
       }
 
@@ -119,13 +163,37 @@ class _PantallaSistemaState extends State<PantallaSistema> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'No se pudo iniciar el juego:\n$e',
-          ),
+          content: Text('No se pudo iniciar el juego:\n$e'),
         ),
       );
     }
   }
+
+Widget _builderCaratula(FileSystemEntity rom) {
+  const sinCaratula = SizedBox(
+    width: 52,
+    height: 68,
+    child: Icon(Icons.sports_esports, size: 36),
+  );
+
+  final rutaCaratula = CaratulasService.buscarCaratula(
+    nombre: _nombreRom(rom),
+    sistema: sistema,
+  );
+
+  if (rutaCaratula == null) return sinCaratula;
+
+  return Image.file(
+    File(rutaCaratula),
+    width: 52,
+    height: 68,
+    fit: BoxFit.contain,
+    cacheWidth: 200, // ahorra memoria con muchos juegos
+    errorBuilder: (context, error, stackTrace) => sinCaratula,
+  );
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +206,7 @@ class _PantallaSistemaState extends State<PantallaSistema> {
   }
 
   Widget _construirContenido() {
-    if (_cargando) {
+    if (_cargando || _cargandoFavoritos) {
       return const Center(
         child: CircularProgressIndicator(),
       );
@@ -173,33 +241,49 @@ class _PantallaSistemaState extends State<PantallaSistema> {
       itemCount: _roms.length,
       itemBuilder: (context, index) {
         final rom = _roms[index];
+        final favorito = _favoritos.contains(rom.path);
 
         return Card(
-          child: InkWell(
-            onTap: () => _lanzarRom(rom),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.sports_esports,
-                    size: 36,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      _nombreRom(rom),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+          child: Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: () => _lanzarRom(rom),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        
+                        _builderCaratula(rom),
+
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _nombreRom(rom),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+              IconButton(
+                tooltip: favorito
+                    ? 'Quitar de favoritos'
+                    : 'Añadir a favoritos',
+                onPressed: () => _alternarFavorito(rom),
+                icon: Icon(
+                  favorito ? Icons.star : Icons.star_border,
+                  color: favorito ? Colors.amber : null,
+                ),
+              ),
+            ],
           ),
         );
       },
